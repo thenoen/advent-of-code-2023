@@ -1,5 +1,7 @@
 package sk.thenoen.aoc.y2023.solution;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -7,6 +9,8 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
+import com.sun.jdi.InvalidLineNumberException;
 
 public class Day1 {
 
@@ -76,6 +80,7 @@ public class Day1 {
 			replacedLines.clear();
 		}
 
+		final List<String> lineNumbers = new ArrayList<>();
 		long calibrationValue = 0;
 		for (String line : lines) {
 
@@ -84,7 +89,10 @@ public class Day1 {
 											 .filter(Character::isDigit)
 											 .toList();
 
-			final Long number = Long.valueOf(String.valueOf(characters.getFirst()) + String.valueOf(characters.getLast()));
+			final String numberString = String.valueOf(characters.getFirst()) + String.valueOf(characters.getLast());
+//			lineNumbers.add(numberString);
+//			writeToFile(lineNumbers, "/tmp/day1-part2.txt");
+			final Long number = Long.valueOf(numberString);
 			calibrationValue += number;
 		}
 
@@ -132,6 +140,8 @@ public class Day1 {
 	public long solvePart2_alternative(String inputPath) {
 		final ArrayList<String> lines = loadLines(inputPath);
 
+		final ArrayList<String> lineNumbers = new ArrayList<>();
+
 		long calibrationValue = 0;
 		for (String line : lines) {
 
@@ -157,8 +167,11 @@ public class Day1 {
 			final String firstDigit = firstOccurrences.get(min.get());
 			final String lastDigit = lastOccurrences.get(max.get());
 
-			final String numberSting = toStringNumber(firstDigit) + toStringNumber(lastDigit);
-			final long number = Long.parseLong(numberSting);
+			final String numberString = toStringNumber(firstDigit) + toStringNumber(lastDigit);
+//			lineNumbers.add(numberString);
+//			writeToFile(lineNumbers, "/tmp/day1-part2-alternative.txt");
+
+			final long number = Long.parseLong(numberString);
 
 			calibrationValue += number;
 		}
@@ -178,10 +191,21 @@ public class Day1 {
 				case C_7 -> "7";
 				case C_8 -> "8";
 				case C_9 -> "9";
-				default -> throw new RuntimeException();
+				default -> throw new IllegalStateException();
 			};
 		} else {
 			return s;
+		}
+	}
+
+	private void writeToFile(List<String> lines, String pathString) {
+
+		try (final FileWriter fileWriter = new FileWriter(pathString)) {
+			for (String line : lines) {
+				fileWriter.write(line + "\n");
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
