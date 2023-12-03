@@ -26,7 +26,7 @@ public class Day1 {
 
 	public long solvePart1(String inputPath) {
 
-		final ArrayList<String> lines = loadLines(inputPath);
+		final ArrayList<String> lines = Utils.loadLines(inputPath);
 
 		long calibrationValue = 0;
 		for (String line : lines) {
@@ -45,7 +45,7 @@ public class Day1 {
 
 	public long solvePart2(String inputPath) {
 
-		List<String> lines = loadLines(inputPath);
+		List<String> lines = Utils.loadLines(inputPath);
 
 		//		final String one = "one23".replace("one", "1");
 
@@ -91,7 +91,7 @@ public class Day1 {
 
 			final String numberString = String.valueOf(characters.getFirst()) + String.valueOf(characters.getLast());
 //			lineNumbers.add(numberString);
-//			writeToFile(lineNumbers, "/tmp/day1-part2.txt");
+//			Utils.writeToFile(lineNumbers, "/tmp/day1-part2.txt");
 			final Long number = Long.valueOf(numberString);
 			calibrationValue += number;
 		}
@@ -128,17 +128,8 @@ public class Day1 {
 		return replaceOccurred;
 	}
 
-	private static ArrayList<String> loadLines(String inputPath) {
-		final Scanner scanner = new Scanner(Day1.class.getClassLoader().getResourceAsStream(inputPath));
-		final ArrayList<String> lines = new ArrayList<>();
-		while (scanner.hasNextLine()) {
-			lines.add(scanner.nextLine());
-		}
-		return lines;
-	}
-
 	public long solvePart2_alternative(String inputPath) {
-		final ArrayList<String> lines = loadLines(inputPath);
+		final ArrayList<String> lines = Utils.loadLines(inputPath);
 
 		final ArrayList<String> lineNumbers = new ArrayList<>();
 
@@ -169,7 +160,7 @@ public class Day1 {
 
 			final String numberString = toStringNumber(firstDigit) + toStringNumber(lastDigit);
 //			lineNumbers.add(numberString);
-//			writeToFile(lineNumbers, "/tmp/day1-part2-alternative.txt");
+//			Utils.writeToFile(lineNumbers, "/tmp/day1-part2-alternative.txt");
 
 			final long number = Long.parseLong(numberString);
 
@@ -195,17 +186,6 @@ public class Day1 {
 			};
 		} else {
 			return s;
-		}
-	}
-
-	private void writeToFile(List<String> lines, String pathString) {
-
-		try (final FileWriter fileWriter = new FileWriter(pathString)) {
-			for (String line : lines) {
-				fileWriter.write(line + "\n");
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		}
 	}
 
