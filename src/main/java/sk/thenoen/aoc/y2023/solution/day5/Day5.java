@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Scanner;
 import java.util.function.Function;
 import java.util.stream.LongStream;
@@ -147,21 +148,22 @@ public class Day5 {
 		List<TripleMap> temperatureToHumidity = getTripleMaps(scanner);
 		List<TripleMap> humidityToLocation = getTripleMaps(scanner);
 
-		final Optional<Long> min = seedRanges.stream()
-											 .map(seedRange -> LongStream.range(seedRange.start, seedRange.start + seedRange.length))
-											 .flatMap(LongStream::boxed)
-											 //											 .parallel()
-											 .map(seed -> map(seed, seedToSoil))
-											 .map(soil -> map(soil, soilToFertilizer))
-											 .map(fertilizer -> map(fertilizer, fertilizerToWater))
-											 .map(water -> map(water, waterToLight))
-											 .map(light -> map(light, lightToTemperature))
-											 .map(temperature -> map(temperature, temperatureToHumidity))
-											 .map(humidity -> map(humidity, humidityToLocation))
-											 .parallel()
-											 .min(Long::compareTo);
+		final OptionalLong min = seedRanges.stream()
+										   .map(seedRange -> LongStream.range(seedRange.start, seedRange.start + seedRange.length))
+										   .flatMap(LongStream::boxed)
+										   .mapToLong(l -> l.longValue())
+										   //											 .parallel()
+										   .map(seed -> map(seed, seedToSoil))
+										   .map(soil -> map(soil, soilToFertilizer))
+										   .map(fertilizer -> map(fertilizer, fertilizerToWater))
+										   .map(water -> map(water, waterToLight))
+										   .map(light -> map(light, lightToTemperature))
+										   .map(temperature -> map(temperature, temperatureToHumidity))
+										   .map(humidity -> map(humidity, humidityToLocation))
+										   .parallel()
+										   .min();
 
-		return min.get();
+		return min.orElseThrow(IllegalStateException::new);
 	}
 
 	private static List<Long> parseSeeds(Scanner scanner) {
