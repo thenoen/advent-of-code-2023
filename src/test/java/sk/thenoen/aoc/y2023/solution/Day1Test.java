@@ -33,8 +33,7 @@ class Day1Test {
 	void solvePart2() {
 		final long solution = day1.solvePart2("day1/part2.txt");
 		System.out.println("solution: " + solution);
-		assertTrue(53543 > solution);
-//		assertEquals(53543, solution);
+		assertEquals(53543, solution);
 	}
 
 
