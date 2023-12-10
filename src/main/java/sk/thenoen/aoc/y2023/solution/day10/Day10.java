@@ -3,6 +3,7 @@ package sk.thenoen.aoc.y2023.solution.day10;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import sk.thenoen.aoc.y2023.solution.Utils;
 
@@ -84,10 +85,11 @@ public class Day10 {
 			for (int x = 0; x < map[0].length; x++) {
 				final Tile counter = new Tile(x, y, map[y][x]);
 				if (!tileAlreadyInPath(counter, path)) {
-					counter.right = countBorders(x, y, map, path, i -> i + 1, i -> i);
-					counter.down = countBorders(x, y, map, path, i -> i, i -> i + 1);
-					counter.left = countBorders(x, y, map, path, i -> i - 1, i -> i);
-					counter.up = countBorders(x, y, map, path, i -> i, i -> i - 1);
+					counter.right = countBorders(x, y, map, path, i -> i + 1, i -> i, t -> t.type == '|');
+					counter.left = countBorders(x, y, map, path, i -> i - 1, i -> i, t -> t.type == '|');
+					counter.down = countBorders(x, y, map, path, i -> i, i -> i + 1, t -> t.type == '-');
+					counter.up = countBorders(x, y, map, path, i -> i, i -> i - 1, t -> t.type == '-');
+					counter.type = '.';
 				}
 				tileCounterMap[x][y] = counter;
 				if (counter.isInside()) {
@@ -108,11 +110,12 @@ public class Day10 {
 
 	private static int countBorders(int startX, int startY, char[][] map, List<Tile> path,
 									Function<Integer, Integer> xDirection,
-									Function<Integer, Integer> yDirection) {
+									Function<Integer, Integer> yDirection,
+									Predicate<Tile> edgeTest) {
 		int x = startX;
 		int y = startY;
 
-		Tile test = new Tile(x, y, '?');
+		Tile test = new Tile(x, y, map[y][x]);
 		boolean inPath = tileAlreadyInPath(test, path);
 		if (inPath) {
 			return 0;
@@ -121,14 +124,14 @@ public class Day10 {
 		boolean borderDetection = false;
 
 		int count = 0;
-		while (x < map[0].length && y < map.length && x > -1 && y > -1) {
+		while (x < map[0].length -1 && y < map.length - 1 && x > 0 && y > 0) {
 			x = xDirection.apply(x);
 			y = yDirection.apply(y);
 
-			test = new Tile(x, y, '?');
+			test = new Tile(x, y, map[y][x]);
 
 			//			inPath = tileAlreadyInPath(test, path);
-			//			if (inPath && borderDetection != inPath) {
+			//			if (/*edgeTest.test(test) && */inPath && borderDetection != inPath) {
 			//				borderDetection = true;
 			//				count++;
 			//			}
@@ -136,7 +139,8 @@ public class Day10 {
 			//				borderDetection = false;
 			//			}
 
-			if (tileAlreadyInPath(test, path)) {
+			final boolean edgeTypeTest = edgeTest.test(test);
+			if (tileAlreadyInPath(test, path) && edgeTypeTest) {
 				count++;
 			}
 		}
@@ -213,7 +217,7 @@ public class Day10 {
 
 		private final int x;
 		private final int y;
-		private final char type;
+		private char type;
 
 		private Tile firstNeighbour;
 		private Tile secondNeighbour;
@@ -225,7 +229,7 @@ public class Day10 {
 
 		private boolean isInside() {
 			return (right % 2 == 1 &&
-					left % 2 == 1) ||
+					left % 2 == 1) &&
 				   (down % 2 == 1 &&
 					up % 2 == 1);
 		}
@@ -299,7 +303,15 @@ public class Day10 {
 			if (isInside()) {
 				return "x";
 			}
-			return type + "";
+			return switch (type) {
+				case 'F' -> "╔";
+				case '7' -> "╗";
+				case '|' -> "║";
+				case 'J' -> "╝";
+				case '-' -> "═";
+				case 'L' -> "╚";
+				default -> type + "";
+			};
 		}
 	}
 

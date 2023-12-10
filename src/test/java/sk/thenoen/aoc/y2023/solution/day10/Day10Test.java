@@ -1,5 +1,6 @@
 package sk.thenoen.aoc.y2023.solution.day10;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,6 +50,15 @@ class Day10Test {
 	public void solvePart2Sample4() {
 		final long solution = day10.solvePart2("day10/part2.sample4.txt");
 		assertEquals(10, solution);
+	}
+
+	@Disabled
+	@Test
+	public void solvePart2() {
+		final long solution = day10.solvePart2("day10/input.txt");
+		System.out.println("Solution: " + solution);
+		assertNotEquals(435, solution); //some as someone else with their input
+		assertEquals(-1, solution);
 	}
 
 }
