@@ -22,9 +22,24 @@ class Day8Test {
 
 	@Test
 	void solvePart1() {
-		final long solution = day8.solvePart1("day8/part1input.txt");
+		final long solution = day8.solvePart1("day8/input.txt");
 		System.out.println("solution = " + solution);
 		assertEquals(18827, solution);
 	}
+
+
+	@Test
+	void solvePart2Sample() {
+		final long solution = day8.solvePart2("day8/part2sample.txt");
+		assertEquals(6, solution);
+	}
+
+	@Test
+	void solvePart2() {
+		final long solution = day8.solvePart2("day8/input.txt");
+		System.out.println("solution = " + solution);
+		assertEquals(20220305520997L, solution);
+	}
+
 
 }
