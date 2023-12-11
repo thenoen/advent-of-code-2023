@@ -21,4 +21,30 @@ class Day11Test {
 		assertEquals(9521550, solution);
 	}
 
+
+
+	@Test
+	void solvePart2Sample_1x() {
+		final long solution = day11.solvePart2("day11/sample.txt",2);
+		assertEquals(374, solution);
+	}
+
+	@Test
+	void solvePart2Sample_10x() {
+		final long solution = day11.solvePart2("day11/sample.txt",10);
+		assertEquals(1030, solution);
+	}
+	@Test
+	void solvePart2Sample_100x() {
+		final long solution = day11.solvePart2("day11/sample.txt",100);
+		assertEquals(8410, solution);
+	}
+
+	@Test
+	void solvePart2() {
+		final long solution = day11.solvePart2("day11/input.txt", 1_000_000L);
+		System.out.println("Solution: " + solution);
+		assertEquals(-1, solution);
+	}
+
 }
