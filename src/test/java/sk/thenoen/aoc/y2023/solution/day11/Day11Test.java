@@ -1,5 +1,6 @@
 package sk.thenoen.aoc.y2023.solution.day11;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,11 +41,12 @@ class Day11Test {
 		assertEquals(8410, solution);
 	}
 
+//	@Disabled
 	@Test
 	void solvePart2() {
 		final long solution = day11.solvePart2("day11/input.txt", 1_000_000L);
 		System.out.println("Solution: " + solution);
-		assertEquals(-1, solution);
+		assertEquals(298932923702L, solution);
 	}
 
 }
