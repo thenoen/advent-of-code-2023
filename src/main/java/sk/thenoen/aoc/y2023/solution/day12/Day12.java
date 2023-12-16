@@ -1,6 +1,7 @@
 package sk.thenoen.aoc.y2023.solution.day12;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,7 +116,7 @@ public class Day12 {
 				final String springs = unfold(springsPart, "?", unfoldingMultiplier);
 				String groupNumbersString = unfold(split[1], ",", unfoldingMultiplier);
 
-				final Condition condition = buildCondition(groupNumbersString);
+				final Condition condition = buildCondition(groupNumbersString, springs);
 
 				long index = lines.indexOf(line) + 1;
 
@@ -127,7 +128,7 @@ public class Day12 {
 				});
 				futures.add(future);
 
-				//				System.out.println("\tcount: " + lineCount);
+				//								System.out.println("\tcount: " + lineCount);
 				//				sum += lineCount;
 			}
 
@@ -237,7 +238,7 @@ public class Day12 {
 		return regex;
 	}
 
-	private static Condition buildCondition(String groupNumbersString) {
+	private static Condition buildCondition(String groupNumbersString, String springs) {
 		Scanner groupScanner = new Scanner(groupNumbersString);
 		groupScanner.useDelimiter(",");
 		List<String> regexParts = new ArrayList<>();
@@ -250,11 +251,32 @@ public class Day12 {
 			regexParts.add("#{" + group + "}");
 		}
 		final String regex = "\\.*?" + String.join("\\.+?", regexParts) + "\\.*?";
-		return new Condition(countOfGears, Pattern.compile(regex), groupSizes);
+
+		List<Pattern> targetPatterns = new ArrayList<>();
+		for (int i = 0; i < springs.length(); i++) {
+			final String substring = springs.substring(0, i + 1);
+			targetPatterns.add(Pattern.compile(mapToPattern(substring)));
+		}
+
+		return new Condition(countOfGears, Pattern.compile(regex), targetPatterns, groupSizes);
+	}
+
+	private static String mapToPattern(String springs) {
+		final String patternString = springs.chars()
+											.map(i -> (char) i)
+											.mapToObj(c -> switch (c) {
+												case '#' -> "#";
+												case '.' -> "\\.";
+												case '?' -> ".";
+												default -> throw new IllegalStateException("Unexpected value: " + c);
+											})
+											.collect(Collectors.joining());
+		return patternString;
 	}
 
 	private record Condition(long gearsCount,
 							 Pattern pattern,
+							 List<Pattern> targetPatterns,
 							 List<Long> groupSizes) {
 
 	}
@@ -297,4 +319,107 @@ public class Day12 {
 
 		return groupSizes;
 	}
+
+	public long solvePart2NextAttempt(String inputPath, int unfoldingMultiplier) throws ExecutionException, InterruptedException {
+
+		final ArrayList<String> lines = Utils.loadLines(inputPath);
+
+		long sum = 0;
+		List<Future<Long>> futures = new ArrayList<>();
+
+		try (ExecutorService executorService = Executors.newFixedThreadPool(11)) {
+
+			for (String line : lines) {
+
+				final String[] split = line.split(" ");
+				String springsPart = split[0];
+				final String springs = unfold(springsPart, "?", unfoldingMultiplier);
+				String groupNumbersString = unfold(split[1], ",", unfoldingMultiplier);
+
+				final Condition condition = buildCondition(groupNumbersString, springs);
+
+				long index = lines.indexOf(line) + 1;
+//				System.out.print("Line: " + index + " of " + lines.size() + " ... ");
+
+//				final long lineCount = verifyTargetCombinations("", condition.groupSizes, condition.targetPatterns, springs);
+//				System.out.println("\tcount: " + lineCount);
+//				sum += lineCount;
+
+				final Future<Long> future = executorService.submit(() -> {
+					System.out.println("Line: " + index + " of " + lines.size() + " ... ");
+					return verifyTargetCombinations("", condition.groupSizes, condition.targetPatterns, springs);
+				});
+				futures.add(future);
+
+			}
+		}
+
+		for (Future<Long> future : futures) {
+			sum += future.get();
+		}
+		return sum;
+	}
+
+	private static long getMingLengthOfTargetCombination(List<Long> groupSizes) {
+		if (groupSizes.isEmpty()) {
+			return 0;
+		}
+		if (groupSizes.size() == 1) {
+			return groupSizes.get(0);
+		}
+		return groupSizes.stream().mapToLong(l -> l).sum() + groupSizes.size() - 1;
+	}
+
+	private long verifyTargetCombinations(String currentPrefix, List<Long> groupSizes, List<Pattern> patterns, String springs) {
+
+		//		System.out.println(currentPrefix);
+
+		if (currentPrefix.length() == springs.length()) {
+			final boolean matches = patterns.getLast().matcher(currentPrefix).matches();
+			if (matches) {
+				//				System.out.println("MATCH: " + currentPrefix);
+				return 1;
+			} else {
+				return 0;
+			}
+		} else {
+			if (!currentPrefix.isEmpty() && !patterns.get(currentPrefix.length() - 1).matcher(currentPrefix).matches()) {
+				return 0;
+			}
+		}
+
+		final long mingLengthOfTargetCombination = getMingLengthOfTargetCombination(groupSizes);
+		long sum = 0;
+		final long availableFreeSpace = springs.length() - currentPrefix.length() - mingLengthOfTargetCombination;
+
+		if (groupSizes.isEmpty()) {
+			return verifyTargetCombinations(currentPrefix + ".".repeat((int) availableFreeSpace), groupSizes, patterns, springs);
+		}
+
+		for (int i = 0; i <= availableFreeSpace; i++) {
+			Long nextGroupSize;
+			if (!groupSizes.isEmpty()) {
+				nextGroupSize = groupSizes.getFirst();
+			} else {
+				nextGroupSize = 0L;
+			}
+
+			String newPrefix = currentPrefix + ".".repeat(i) + "#".repeat(nextGroupSize.intValue());
+			if (newPrefix.length() < springs.length()) {
+				newPrefix += ".";
+			}
+
+			List<Long> newGroupSizes;
+			if (!groupSizes.isEmpty()) {
+				newGroupSizes = groupSizes.subList(1, groupSizes.size());
+			} else {
+				newGroupSizes = Collections.emptyList();
+			}
+
+			sum += verifyTargetCombinations(newPrefix, newGroupSizes, patterns, springs);
+		}
+
+		return sum;
+	}
+
 }

@@ -39,7 +39,7 @@ class Day12Test {
 		assertEquals(0, solution);
 	}
 
-
+// ===========================================================================
 
 	@Test
 	void solvePart1SampleSolution2() throws ExecutionException, InterruptedException {
@@ -60,9 +60,39 @@ class Day12Test {
 		assertEquals(525152, solution);
 	}
 
+	@Disabled //slow
 	@Test
 	void solvePart2() throws ExecutionException, InterruptedException {
 		final long solution = day12.solvePart2("day12/input.txt", 5);
+		System.out.println("Solution: " + solution);
+		assertEquals(0, solution);
+	}
+
+// ===========================================================================
+
+	@Test
+	void solvePart1SampleSolution2NextAttempt() throws ExecutionException, InterruptedException {
+		final long solution = day12.solvePart2NextAttempt("day12/sample.txt", 1);
+		assertEquals(21, solution);
+	}
+
+	@Test
+	void solvePart1Solution2NextAttempt() throws ExecutionException, InterruptedException {
+		final long solution = day12.solvePart2NextAttempt("day12/input.txt", 1);
+		System.out.println("Solution: " + solution);
+		assertEquals(7090, solution);
+	}
+
+	@Test
+	void solvePart2SampleNextAttempt() throws ExecutionException, InterruptedException {
+		final long solution = day12.solvePart2NextAttempt("day12/sample.txt", 5);
+		assertEquals(525152, solution);
+	}
+
+//	@Disabled //slow
+	@Test
+	void solvePart2NextAttempt() throws ExecutionException, InterruptedException {
+		final long solution = day12.solvePart2NextAttempt("day12/input.txt", 5);
 		System.out.println("Solution: " + solution);
 		assertEquals(0, solution);
 	}
