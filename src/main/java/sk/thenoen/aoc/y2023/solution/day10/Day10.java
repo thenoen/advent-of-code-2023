@@ -1,7 +1,11 @@
 package sk.thenoen.aoc.y2023.solution.day10;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -38,7 +42,7 @@ public class Day10 {
 
 		test = path.getLast();
 		while (test != null) {
-			if (test.firstNeighbour == null) {
+			if (test.nextNeighbour == null) {
 				test = findNextTile(test, map, path);
 			}
 		}
@@ -46,6 +50,7 @@ public class Day10 {
 		return (path.size() / 2) + (path.size() % 2);
 	}
 
+	// terribly slow and ugly code
 	public long solvePart2(String inputPath) {
 
 		final ArrayList<String> lines = Utils.loadLines(inputPath);
@@ -73,39 +78,183 @@ public class Day10 {
 
 		test = path.getLast();
 		while (test != null) {
-			if (test.firstNeighbour == null) {
-				test = findNextTile(test, map, path);
-			}
+			//			if (test.firstNeighbour == null) {
+			test = findNextTile(test, map, path);
+			//			}
 		}
 
-		Tile[][] tileCounterMap = new Tile[map[0].length][map.length];
-		int insideCount = 0;
+		//fix previous and next tiles
+		for (int i = 0; i < path.size(); i++) {
+			path.get(i).nextNeighbour = path.get((i + 1) % path.size());
+			path.get((i + 1) % path.size()).previousNeighbour = path.get(i);
+		}
+
+		LinkedHashMap<Tile, Tile> edges = new LinkedHashMap<>();
+
+		Tile edgeStart = start;
+		for (int i = 1; i < path.size(); i++) {
+			if (path.get(i).isCorner()) {
+				edges.put(edgeStart, path.get(i));
+				edgeStart = path.get(i);
+			}
+		}
+		edges.put(edgeStart, path.getLast().nextNeighbour);
+
+		final CountInsideTiles result = getCountInsideTiles(map, path, edges);
 
 		for (int y = 0; y < map.length; y++) {
 			for (int x = 0; x < map[0].length; x++) {
-				final Tile counter = new Tile(x, y, map[y][x]);
-				if (!tileAlreadyInPath(counter, path)) {
-					counter.right = countBorders(x, y, map, path, i -> i + 1, i -> i, t -> t.type == '|');
-					counter.left = countBorders(x, y, map, path, i -> i - 1, i -> i, t -> t.type == '|');
-					counter.down = countBorders(x, y, map, path, i -> i, i -> i + 1, t -> t.type == '-');
-					counter.up = countBorders(x, y, map, path, i -> i, i -> i - 1, t -> t.type == '-');
-					counter.type = '.';
+				final Tile tile = result.tileCounterMap()[x][y];
+				String type;
+				if (path.contains(tile)) {
+					type = tile.toString();
+				} else if (tile.isInside()) {
+					type = "x";
+				} else {
+					type = ".";
 				}
-				tileCounterMap[x][y] = counter;
-				if (counter.isInside()) {
-					insideCount++;
-				}
-			}
-		}
-
-		for (int y = 0; y < map.length; y++) {
-			for (int x = 0; x < map[0].length; x++) {
-				System.out.print(tileCounterMap[x][y] + " ");
+				System.out.print(type + " ");
 			}
 			System.out.println();
 		}
 
-		return insideCount;
+		return result.insideCount();
+	}
+
+	private static CountInsideTiles getCountInsideTiles(char[][] map, List<Tile> path, LinkedHashMap<Tile, Tile> edges) {
+		final int xDimension = map[0].length;
+		final int yDimension = map.length;
+		Tile[][] tileCounterMap = new Tile[xDimension][yDimension];
+		int insideCount = 0;
+
+		for (int y = 0; y < map.length; y++) {
+			for (int x = 0; x < map[0].length; x++) {
+				final Tile testTile = new Tile(x, y, map[y][x]);
+				tileCounterMap[x][y] = testTile;
+				if (tileAlreadyInPath(testTile, path)) {
+					continue;
+				}
+
+				//check crossed edges
+
+				Set<Tile> crossedEdges = new HashSet<>();
+				for (int testX = 0; testX < testTile.x; testX++) {
+					int testY = testTile.y;
+					crossedEdges.addAll(countCrossedEdges(edges, testX, testY));
+				}
+				Set<Tile> edgeStartsToRemove = findFullyCrossedEdges(crossedEdges, edges);
+				crossedEdges.removeAll(edgeStartsToRemove);
+				testTile.left = crossedEdges.size();
+				crossedEdges.clear();
+
+				for (int testX = testTile.x; testX < xDimension; testX++) {
+					int testY = testTile.y;
+					crossedEdges.addAll(countCrossedEdges(edges, testX, testY));
+				}
+				edgeStartsToRemove = findFullyCrossedEdges(crossedEdges, edges);
+				crossedEdges.removeAll(edgeStartsToRemove);
+				testTile.right = crossedEdges.size();
+				crossedEdges.clear();
+
+				for (int testY = 0; testY < testTile.y; testY++) {
+					int testX = testTile.x;
+					crossedEdges.addAll(countCrossedEdges(edges, testX, testY));
+				}
+				// remove ALL full crossed  with U-shaped siblings
+				edgeStartsToRemove = findFullyCrossedEdges(crossedEdges, edges);
+				crossedEdges.removeAll(edgeStartsToRemove);
+				testTile.up = crossedEdges.size();
+				crossedEdges.clear();
+
+				for (int testY = testTile.y; testY < yDimension; testY++) {
+					int testX = testTile.x;
+					crossedEdges.addAll(countCrossedEdges(edges, testX, testY));
+				}
+				edgeStartsToRemove = findFullyCrossedEdges(crossedEdges, edges);
+				crossedEdges.removeAll(edgeStartsToRemove);
+				testTile.down = crossedEdges.size();
+				crossedEdges.clear();
+
+				if (testTile.isInside()) {
+					insideCount++;
+				}
+			}
+		}
+		CountInsideTiles result = new CountInsideTiles(tileCounterMap, insideCount);
+		return result;
+	}
+
+	private record CountInsideTiles(Tile[][] tileCounterMap, int insideCount) {
+
+	}
+
+	private static Set<Tile> countCrossedEdges(LinkedHashMap<Tile, Tile> edges, int testX, int testY) {
+		Set<Tile> crossedEdgeStarts = new HashSet<>();
+		for (Tile eStart : edges.keySet()) {
+			final Tile eEnd = edges.get(eStart);
+			if (crossesEdge(eStart, eEnd, testX, testY)) {
+				crossedEdgeStarts.add(eStart);
+			}
+		}
+
+		return crossedEdgeStarts;
+	}
+
+	private static Set<Tile> findFullyCrossedEdges(Set<Tile> crossedEdgeStarts, LinkedHashMap<Tile, Tile> edges) {
+		Set<Tile> edgeStartsToRemove = new HashSet<>();
+
+		for (Tile crossedEdgeStart : crossedEdgeStarts) {
+			final Tile crossedEdgeEnd = edges.get(crossedEdgeStart);
+			Tile w1Start = findStartForEnd(crossedEdgeStart, edges);
+			if (crossedEdgeStarts.contains(crossedEdgeEnd)
+				&& crossedEdgeStarts.contains(w1Start)) {
+				// is fully crossed
+				// find orientation fo wings
+				; // needs start of edge that ends with crossedEdgeStart
+				Tile w1End = crossedEdgeStart;
+				Tile w2Start = crossedEdgeEnd;
+				Tile w2End = edges.get(w2Start);
+				if (w1End.x == w2Start.x) { //horizontally parallel
+					//vertical
+					if ((w1Start.x > w1End.x && w2End.x > w1End.x) ||
+						(w1Start.x < w1End.x && w2End.x < w1End.x)) {
+						//same orientation
+						edgeStartsToRemove.add(crossedEdgeStart);
+					} else {
+						//opposite orientation
+					}
+				} else if (w1End.y == w2Start.y) { //vertically parallel
+					//horizontal
+					if ((w1Start.y > w1End.y && w2End.y > w1End.y) ||
+						(w1Start.y < w1End.y && w2End.y < w1End.y)) {
+						//same orientation
+						edgeStartsToRemove.add(crossedEdgeStart);
+					} else {
+						//opposite orientation
+					}
+				} else {
+					throw new IllegalStateException("should not happen");
+				}
+			}
+		}
+		return edgeStartsToRemove;
+	}
+
+	private static Tile findStartForEnd(Tile start, Map<Tile, Tile> edges) {
+		for (Map.Entry<Tile, Tile> edge : edges.entrySet()) {
+			if (edge.getValue() == start) {
+				return edge.getKey();
+			}
+		}
+		throw new IllegalStateException("can't happen");
+	}
+
+	private static boolean crossesEdge(Tile eStart, Tile eEnd, int testX, int testY) {
+		if (Math.min(eStart.x, eEnd.x) <= testX && testX <= Math.max(eStart.x, eEnd.x) &&
+			Math.min(eStart.y, eEnd.y) <= testY && testY <= Math.max(eStart.y, eEnd.y)) {
+			return true;
+		}
+		return false;
 	}
 
 	private static int countBorders(int startX, int startY, char[][] map, List<Tile> path,
@@ -124,7 +273,7 @@ public class Day10 {
 		boolean borderDetection = false;
 
 		int count = 0;
-		while (x < map[0].length -1 && y < map.length - 1 && x > 0 && y > 0) {
+		while (x < map[0].length - 1 && y < map.length - 1 && x > 0 && y > 0) {
 			x = xDirection.apply(x);
 			y = yDirection.apply(y);
 
@@ -163,22 +312,25 @@ public class Day10 {
 	}
 
 	private static Tile findNextTile(Tile start, char[][] map, List<Tile> path) {
-		Tile test = new Tile(start.x + 1, start.y, map[start.y][start.x + 1]);
 
+		Tile test = new Tile(start.x + 1, start.y, map[start.y][start.x + 1]);
 		if (!tileAlreadyInPath(test, path) && start.canConnectWith(test)) {
 			path.add(test);
 			return test;
 		}
+
 		test = new Tile(start.x, start.y - 1, map[start.y - 1][start.x]);
 		if (!tileAlreadyInPath(test, path) && start.canConnectWith(test)) {
 			path.add(test);
 			return test;
 		}
+
 		test = new Tile(start.x - 1, start.y, map[start.y][start.x - 1]);
 		if (!tileAlreadyInPath(test, path) && start.canConnectWith(test)) {
 			path.add(test);
 			return test;
 		}
+
 		test = new Tile(start.x, start.y + 1, map[start.y + 1][start.x]);
 		if (!tileAlreadyInPath(test, path) && start.canConnectWith(test)) {
 			path.add(test);
@@ -219,13 +371,18 @@ public class Day10 {
 		private final int y;
 		private char type;
 
-		private Tile firstNeighbour;
-		private Tile secondNeighbour;
+		private Tile nextNeighbour;
+		private Tile previousNeighbour;
 
 		private int right = 0;
 		private int down = 0;
 		private int left = 0;
 		private int up = 0;
+
+		private boolean isCorner() {
+			// S may not be always a Corner
+			return List.of('F', '7', 'L', 'J', 'S').contains(this.type);
+		}
 
 		private boolean isInside() {
 			return (right % 2 == 1 &&
@@ -249,30 +406,36 @@ public class Day10 {
 				return false;
 			}
 			if (this.type == 'S') {
-				if (this.firstNeighbour == null && matches(this.getCoordinates(), other.getFirstNeighbour())) {
-					this.firstNeighbour = other;
+				if (this.nextNeighbour == null && matches(this.getCoordinates(), other.getNextNeighbourCoordinates())) {
+					this.previousNeighbour = other;
+					//					other.nextNeighbour = this;
 					return true;
 				}
-				if (this.secondNeighbour == null && matches(this.getCoordinates(), other.getSecondNeighbour())) {
-					this.secondNeighbour = other;
+				if (this.previousNeighbour == null && matches(this.getCoordinates(), other.getPreviousNeighbourCoordinates())) {
+					this.nextNeighbour = other;
+					//					other.previousNeighbour = this;
 					return true;
 				}
 				return false;
 			}
-			if (this.firstNeighbour == null && matches(this.getFirstNeighbour(), other.getCoordinates()) &&
-				(matches(this.getCoordinates(), other.getFirstNeighbour()) || matches(this.getCoordinates(), other.getSecondNeighbour()))) {
-				this.firstNeighbour = other;
+			if (this.nextNeighbour == null && matches(this.getNextNeighbourCoordinates(), other.getCoordinates()) &&
+				(matches(this.getCoordinates(), other.getNextNeighbourCoordinates()) ||
+				 matches(this.getCoordinates(), other.getPreviousNeighbourCoordinates()))) {
+				this.nextNeighbour = other;
+				//				other.previousNeighbour = this;
 				return true;
 			}
-			if (this.secondNeighbour == null && matches(this.getSecondNeighbour(), other.getCoordinates()) &&
-				(matches(this.getCoordinates(), other.getFirstNeighbour()) || matches(this.getCoordinates(), other.getSecondNeighbour()))) {
-				this.secondNeighbour = other;
+			if (this.previousNeighbour == null && matches(this.getPreviousNeighbourCoordinates(), other.getCoordinates()) &&
+				(matches(this.getCoordinates(), other.getNextNeighbourCoordinates()) ||
+				 matches(this.getCoordinates(), other.getPreviousNeighbourCoordinates()))) {
+				this.previousNeighbour = other;
+				//				other.nextNeighbour = this;
 				return true;
 			}
 			return false;
 		}
 
-		public int[] getFirstNeighbour() {
+		public int[] getNextNeighbourCoordinates() { //next
 			return switch (type) {
 				case '7' -> new int[]{x, y + 1};
 				case '|' -> new int[]{x, y + 1};
@@ -285,7 +448,7 @@ public class Day10 {
 			};
 		}
 
-		public int[] getSecondNeighbour() {
+		public int[] getPreviousNeighbourCoordinates() { //previous
 			return switch (type) {
 				case '7' -> new int[]{x - 1, y};
 				case '|' -> new int[]{x, y - 1};

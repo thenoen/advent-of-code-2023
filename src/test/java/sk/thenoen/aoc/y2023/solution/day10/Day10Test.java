@@ -52,13 +52,16 @@ class Day10Test {
 		assertEquals(10, solution);
 	}
 
-	@Disabled
+	/**
+	 * duration: ~5 minutes @ 4 × Intel® Core™ i5-5300U CPU @ 2.30GHz
+	 */
+	//	@Disabled
 	@Test
 	public void solvePart2() {
 		final long solution = day10.solvePart2("day10/input.txt");
 		System.out.println("Solution: " + solution);
 		assertNotEquals(435, solution); //some as someone else with their input
-		assertEquals(-1, solution);
+		assertEquals(525, solution);
 	}
 
 }
