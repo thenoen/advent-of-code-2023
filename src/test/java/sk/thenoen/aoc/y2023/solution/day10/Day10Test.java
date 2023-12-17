@@ -55,7 +55,7 @@ class Day10Test {
 	/**
 	 * duration: ~5 minutes @ 4 × Intel® Core™ i5-5300U CPU @ 2.30GHz
 	 */
-	//	@Disabled
+//		@Disabled
 	@Test
 	public void solvePart2() {
 		final long solution = day10.solvePart2("day10/input.txt");

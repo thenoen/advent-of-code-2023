@@ -1,6 +1,7 @@
 package sk.thenoen.aoc.y2023.solution.day10;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -89,16 +90,20 @@ public class Day10 {
 			path.get((i + 1) % path.size()).previousNeighbour = path.get(i);
 		}
 
-		LinkedHashMap<Tile, Tile> edges = new LinkedHashMap<>();
+		Map<Tile, Tile> edges = new LinkedHashMap<>();
 
 		Tile edgeStart = start;
 		for (int i = 1; i < path.size(); i++) {
 			if (path.get(i).isCorner()) {
 				edges.put(edgeStart, path.get(i));
+				edgeStart.nextCorner = path.get(i);
+				path.get(i).previousCorner = edgeStart;
 				edgeStart = path.get(i);
 			}
 		}
 		edges.put(edgeStart, path.getLast().nextNeighbour);
+		edgeStart.nextCorner = path.getLast().nextNeighbour;
+		path.getLast().nextNeighbour.previousCorner = edgeStart;
 
 		final CountInsideTiles result = getCountInsideTiles(map, path, edges);
 
@@ -121,7 +126,7 @@ public class Day10 {
 		return result.insideCount();
 	}
 
-	private static CountInsideTiles getCountInsideTiles(char[][] map, List<Tile> path, LinkedHashMap<Tile, Tile> edges) {
+	private static CountInsideTiles getCountInsideTiles(char[][] map, List<Tile> path, Map<Tile, Tile> edges) {
 		final int xDimension = map[0].length;
 		final int yDimension = map.length;
 		Tile[][] tileCounterMap = new Tile[xDimension][yDimension];
@@ -188,10 +193,10 @@ public class Day10 {
 
 	}
 
-	private static Set<Tile> countCrossedEdges(LinkedHashMap<Tile, Tile> edges, int testX, int testY) {
+	private static Set<Tile> countCrossedEdges(Map<Tile, Tile> edges, int testX, int testY) {
 		Set<Tile> crossedEdgeStarts = new HashSet<>();
 		for (Tile eStart : edges.keySet()) {
-			final Tile eEnd = edges.get(eStart);
+			final Tile eEnd = eStart.nextCorner; //edges.get(eStart);
 			if (crossesEdge(eStart, eEnd, testX, testY)) {
 				crossedEdgeStarts.add(eStart);
 			}
@@ -200,12 +205,12 @@ public class Day10 {
 		return crossedEdgeStarts;
 	}
 
-	private static Set<Tile> findFullyCrossedEdges(Set<Tile> crossedEdgeStarts, LinkedHashMap<Tile, Tile> edges) {
+	private static Set<Tile> findFullyCrossedEdges(Set<Tile> crossedEdgeStarts, Map<Tile, Tile> edges) {
 		Set<Tile> edgeStartsToRemove = new HashSet<>();
 
 		for (Tile crossedEdgeStart : crossedEdgeStarts) {
 			final Tile crossedEdgeEnd = edges.get(crossedEdgeStart);
-			Tile w1Start = findStartForEnd(crossedEdgeStart, edges);
+			Tile w1Start = crossedEdgeStart.previousCorner;//findStartForEnd(crossedEdgeStart, edges);
 			if (crossedEdgeStarts.contains(crossedEdgeEnd)
 				&& crossedEdgeStarts.contains(w1Start)) {
 				// is fully crossed
@@ -373,6 +378,8 @@ public class Day10 {
 
 		private Tile nextNeighbour;
 		private Tile previousNeighbour;
+		private Tile nextCorner;
+		private Tile previousCorner;
 
 		private int right = 0;
 		private int down = 0;
