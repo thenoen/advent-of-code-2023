@@ -25,28 +25,73 @@ public class Day16 {
 			}
 		}
 
-		final ArrayList<Beam> finishedBeams = new ArrayList<>();
-		final ArrayList<Beam> beamsToProcess = new ArrayList<>();
 		final Beam firstBeam = new Beam(1, 0);
-		//		firstBeam.addTile(tiles[0][0]);
-		beamsToProcess.add(firstBeam);
+		firstBeam.initialTile = tiles[0][0];
 
-		long countOfEnergizedTiles = 0;
+		final long count = getEnergizedCount(firstBeam, tiles);
 
-		while (!beamsToProcess.isEmpty()) {
-			final Beam beam = beamsToProcess.removeLast();
-			final List<Beam> newBeams = followBeam(beam, tiles);
-			final List<Beam> newUniqueBeams = newBeams.stream()
-													  .filter(b -> !finishedBeams.contains(b))
-													  .toList();
-			newUniqueBeams.forEach(beamsToProcess::addFirst);
-			finishedBeams.add(beam);
-			//			printMap(tiles);
-			countOfEnergizedTiles = countEnergizedTiles(tiles);
+		return count;
+	}
+
+	public long solvePart2(String inputPath) {
+		final ArrayList<String> lines = Utils.loadLines(inputPath);
+
+		final char[][] map = lines.stream()
+								  .map(line -> line.toCharArray())
+								  .toList()
+								  .toArray(char[][]::new);
+
+		final Tile[][] tiles = new Tile[map.length][map[0].length];
+
+		for (int y = 0; y < map.length; y++) {
+			for (int x = 0; x < map[0].length; x++) {
+				tiles[y][x] = new Tile(map[y][x], x, y);
+			}
 		}
 
-		final long count = countEnergizedTiles(tiles);
+		//		final Beam firstBeam = new Beam(1, 0);
+		//		firstBeam.initialTile = tiles[0][0];
 
+		List<Beam> beamsToTest = new ArrayList<>();
+		for (int y = 0; y < tiles.length; y++) {
+
+			final Beam beamFromLeft = new Beam(1, 0);
+			beamFromLeft.initialTile = tiles[y][0];
+			beamsToTest.add(beamFromLeft);
+
+			final Beam beamFromRight = new Beam(-1, 0);
+			beamFromRight.initialTile = tiles[y][tiles[y].length - 1];
+			beamsToTest.add(beamFromRight);
+		}
+
+		for (int x = 0; x < tiles[0].length; x++) {
+			final Beam beamFromTop = new Beam(0, 1);
+			beamFromTop.initialTile = tiles[0][x];
+			beamsToTest.add(beamFromTop);
+
+			final Beam beamFromBottom = new Beam(0, -1);
+			beamFromBottom.initialTile = tiles[tiles.length - 1][x];
+			beamsToTest.add(beamFromBottom);
+		}
+
+		long maxCount = 0;
+		for (Beam firstBeam : beamsToTest) {
+			final long count = getEnergizedCount(firstBeam, tiles);
+			if (count > maxCount) {
+				maxCount = count;
+			}
+			resetEnergizedTiles(tiles);
+		}
+		return maxCount;
+	}
+
+	private static long resetEnergizedTiles(Tile[][] tiles) {
+		long count = 0;
+		for (int y = 0; y < tiles.length; y++) {
+			for (int x = 0; x < tiles[0].length; x++) {
+				tiles[y][x].energizationCount = 0;
+			}
+		}
 		return count;
 	}
 
@@ -59,6 +104,29 @@ public class Day16 {
 				}
 			}
 		}
+		return count;
+	}
+
+	private static long getEnergizedCount(Beam initialBeam, Tile[][] tiles) {
+		long countOfEnergizedTiles = 0;
+
+		final ArrayList<Beam> finishedBeams = new ArrayList<>();
+		final ArrayList<Beam> beamsToProcess = new ArrayList<>();
+		beamsToProcess.add(initialBeam);
+
+		while (!beamsToProcess.isEmpty()) {
+			final Beam beam = beamsToProcess.removeLast();
+			final List<Beam> newBeams = followBeam(beam, tiles);
+			final List<Beam> newUniqueBeams = newBeams.stream()
+													  .filter(b -> !finishedBeams.contains(b))
+													  .toList();
+			newUniqueBeams.forEach(beamsToProcess::addFirst);
+			finishedBeams.add(beam);
+			//			printMap(tiles);
+//			countOfEnergizedTiles = countEnergizedTiles(tiles);
+		}
+
+		final long count = countEnergizedTiles(tiles);
 		return count;
 	}
 
@@ -90,10 +158,6 @@ public class Day16 {
 			System.out.println();
 		}
 		System.out.println();
-	}
-
-	public long solvePart2(String inputPath) {
-		return 0;
 	}
 
 	private static List<Beam> followBeam(Beam beam, Tile[][] tiles) {
@@ -199,6 +263,8 @@ public class Day16 {
 		private int xDirection;
 		private int yDirection;
 
+		private Tile initialTile;
+
 		private final List<Tile> tilesPath = new ArrayList<>();
 
 		public Beam(int xDirection, int yDirection) {
@@ -210,7 +276,7 @@ public class Day16 {
 
 			final Tile currentTile;
 			if (tilesPath.isEmpty()) {
-				return tiles[0][0];
+				return initialTile;
 			} else {
 				currentTile = tilesPath.getLast();
 			}

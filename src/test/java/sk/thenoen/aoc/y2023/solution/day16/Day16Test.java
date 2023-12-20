@@ -22,4 +22,18 @@ class Day16Test {
 		assertEquals(7482, solution);
 	}
 
+	@Test
+	void solvePart2Sample() {
+		final long solution = day16.solvePart2("day16/sample.txt");
+		System.out.println("solution: " + solution);
+		assertEquals(51, solution);
+	}
+
+	@Test
+	void solvePart2() {
+		final long solution = day16.solvePart2("day16/input.txt");
+		System.out.println("solution: " + solution);
+		assertEquals(7896, solution);
+	}
+
 }
