@@ -1,13 +1,13 @@
 package sk.thenoen.aoc.y2023.solution.day17;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import sk.thenoen.aoc.y2023.solution.Utils;
 
@@ -41,14 +41,14 @@ public class Day17 {
 		travellers.add(traveller);
 		traveller.visitTile(startingTile);
 
-		findPath(map[0].length, map.length, map, tiles, endingTile, travellers);
-
-		return 0;
+		return findPath(map[0].length, map.length, map, tiles, endingTile, travellers);
 	}
 
-	private static void findPath(int X, int Y, Tile[][] map, List<Tile> tiles, Tile endingTile, List<Traveller> travellers) {
+	private static Integer findPath(int X, int Y, Tile[][] map, List<Tile> tiles, Tile endingTile, List<Traveller> travellers) {
 
 		final List<Traveller> travellersAtTheEnd = new ArrayList<>();
+		int distanceAtTheEnd = Integer.MAX_VALUE;
+		final Map<String, Integer> knownSubPaths = new HashMap<>(65535);
 
 		while (true) {
 			// Visit all neighbour Tiles
@@ -65,50 +65,66 @@ public class Day17 {
 						// remove _traveller_ from _travellers_
 					}
 				}
-				doneTravellers.add(t);
+				//				doneTravellers.add(t);
 			}
-			travellers.removeAll(doneTravellers);
-			doneTravellers.forEach(t -> t.getGetCurrentTile().removeTraveller(t));
+//			travellers.forEach(t -> t.getGetCurrentTile().removeTraveller(t));
+			travellers.clear();
 			travellers.addAll(newTravellers);
 
-			//			System.out.println("---------------------------------------");
-			//			printField(X, Y, field);
-			//			try {
-			//				Thread.sleep(400);
-			//			} catch (InterruptedException e) {
-			//				throw new RuntimeException(e);
-			//			}
-
-			// Evaluate travelled paths and keep only the shortest
-			for (Tile tile : tiles) {
-				final List<Traveller> presentTravellers = tile.getPresentTravellers();
-				if (presentTravellers.size() < 2) {
-					continue;
-				}
-				final Traveller first = presentTravellers
-						.stream()
-						.min(Comparator.comparing(Traveller::getTravelledDistance))
-						.orElseThrow();
-				travellers.removeAll(presentTravellers);
-				travellers.add(first);
-				tile.removeTravellers();
-				tile.addTraveller(first);
-			}
+			// eliminate travellers
 
 			final List<Traveller> tmpAtTheEnd = travellers.stream()
-															.filter(t -> t.getGetCurrentTile() == endingTile)
-															.toList();
-
+														  .filter(t -> t.getGetCurrentTile() == endingTile)
+														  .toList();
 			travellers.removeAll(tmpAtTheEnd);
+
+			final Optional<Integer> potentialDistanceAtTheEnd = tmpAtTheEnd.stream()
+																		   .map(Traveller::getTravelledDistance)
+																		   .sorted()
+																		   .findFirst();
+			if (potentialDistanceAtTheEnd.isPresent()) {
+				distanceAtTheEnd = Math.min(distanceAtTheEnd, potentialDistanceAtTheEnd.get());
+			}
+
+			for (Traveller traveller : travellers) {
+
+				final Integer knownSubDistance = knownSubPaths.get(traveller.getLastSignificantSegment());
+				final Integer travelledSubDistance = traveller.getTravelledDistance();
+				if (travelledSubDistance > distanceAtTheEnd) {
+					doneTravellers.add(traveller);
+					continue;
+				}
+
+				if (knownSubDistance != null && knownSubDistance < travelledSubDistance) {
+					doneTravellers.add(traveller);
+				} else {
+					knownSubPaths.put(traveller.getLastSignificantSegment(), travelledSubDistance);
+				}
+			}
+			travellers.removeAll(doneTravellers);
+
 			travellersAtTheEnd.addAll(tmpAtTheEnd);
-			tmpAtTheEnd.forEach(t -> t.getGetCurrentTile().removeTraveller(t));
+//			tmpAtTheEnd.forEach(t -> t.getGetCurrentTile().removeTraveller(t));
 
 			if (travellers.isEmpty()) {
-				final Map<Traveller, Integer> distances = travellersAtTheEnd.stream()
-																		  .collect(Collectors.toMap(t -> t, Traveller::getTravelledDistance));
-				break;
+
+				printMap(map, travellersAtTheEnd.getFirst());
+				System.out.println();
+				return distanceAtTheEnd;
 			}
 		}
+	}
+
+	private static void printMap(Tile[][] map, Traveller traveller) {
+		traveller.travelledPath.forEach(tile -> tile.setVisited(true));
+		for (int y = 0; y < map.length; y++) {
+			for (int x = 0; x < map[0].length; x++) {
+				System.out.print(map[y][x].getVisited() ? "X" : map[y][x].getHeatLoss());
+			}
+			System.out.println();
+		}
+		traveller.travelledPath.forEach(tile -> tile.setVisited(false));
+		System.out.println();
 	}
 
 	private static List<Tile> findNextPossibleSteps(List<Tile> path, Tile[][] tiles) {
@@ -134,8 +150,8 @@ public class Day17 {
 
 		Tile previous = path.get(path.size() - 2); // B
 		Tile thirdPrevious = null;
-		if (path.size() > 2) {
-			thirdPrevious = path.get(path.size() - 3); // C
+		if (path.size() > 3) {
+			thirdPrevious = path.get(path.size() - 4); // C
 		}
 
 		int dX = current.x - previous.x;
@@ -180,11 +196,10 @@ public class Day17 {
 
 	private static class Tile {
 
-		//		private List<Tile> neighbours = new ArrayList<>();
 		private List<Traveller> presentTravellers = new ArrayList<>();
 		private boolean visited;
 		private int heatLoss;
-		private char label;
+		private String label;
 		private final int x;
 		private final int y;
 
@@ -192,23 +207,16 @@ public class Day17 {
 			this.heatLoss = Integer.parseInt(String.valueOf(heatLoss));
 			this.x = x;
 			this.y = y;
+			this.label = x + "," + y;
 		}
 
 		public int getHeatLoss() {
 			return heatLoss;
 		}
 
-		public char getLabel() {
+		public String getLabel() {
 			return label;
 		}
-
-		//		public void addNeighbour(Tile neighbour) {
-		//			neighbours.add(neighbour);
-		//		}
-
-		//		public List<Tile> getNeighbours() {
-		//			return neighbours;
-		//		}
 
 		public List<Traveller> getPresentTravellers() {
 			return presentTravellers;
@@ -242,6 +250,9 @@ public class Day17 {
 
 	private class Traveller {
 
+		private String lastSignificantSegment;
+		private int travelledDistance;
+
 		@Override
 		public String toString() {
 			return "T " + getGetCurrentTile().toString() + " - p: " + travelledPath.size();
@@ -251,8 +262,19 @@ public class Day17 {
 
 		private void visitTile(Tile tile) {
 			travelledPath.addLast(tile);
-			tile.setVisited(true);
-			tile.addTraveller(this);
+			lastSignificantSegment = calculateLastSignificantSegment();
+			travelledDistance = calculateTravelledDistance();
+
+			//			tile.setVisited(true);
+//			tile.addTraveller(this);
+		}
+
+		public String getLastSignificantSegment() {
+			return lastSignificantSegment;
+		}
+
+		public int getTravelledDistance() {
+			return travelledDistance;
 		}
 
 		public boolean alreadyVisited(Tile tile) {
@@ -263,7 +285,7 @@ public class Day17 {
 			return travelledPath.getLast();
 		}
 
-		public int getTravelledDistance() {
+		public Integer calculateTravelledDistance() {
 			return travelledPath.subList(1, travelledPath.size()).stream()
 								.mapToInt(Tile::getHeatLoss)
 								.sum();
@@ -280,6 +302,14 @@ public class Day17 {
 			final Traveller traveller = new Traveller();
 			traveller.setTravelledPath(path);
 			return traveller;
+		}
+
+		public String calculateLastSignificantSegment() {
+			String result = "";
+			for (int i = 0; i < 4 && i < travelledPath.size(); i++) {
+				result += travelledPath.get(travelledPath.size() - 1 - i).getLabel() + ";";
+			}
+			return result;
 		}
 
 	}
