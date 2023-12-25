@@ -21,7 +21,7 @@ class Day17Test {
 		final long solution = day17.solvePart1("day17/input.txt");
 		System.out.println("solution: " + solution);
 		assertTrue(solution < 1388);
-		assertEquals(0, solution);
+		assertNotEquals(962, solution);
 	}
 
 }

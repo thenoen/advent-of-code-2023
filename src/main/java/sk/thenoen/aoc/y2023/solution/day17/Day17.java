@@ -41,6 +41,7 @@ public class Day17 {
 		Traveller traveller = new Traveller();
 		travellers.add(traveller);
 		traveller.visitTile(startingTile);
+		traveller.travelledDistance = 0;
 
 		return findPath(map[0].length, map.length, map, tiles, endingTile, travellers);
 	}
@@ -78,7 +79,7 @@ public class Day17 {
 															 .toList();
 
 			newTravellers.removeAll(tmpAtTheEnd);
-			newTravellers.forEach(travellers::addFirst);
+			//			newTravellers.forEach(travellers::addFirst);
 
 			final Optional<Integer> potentialDistanceAtTheEnd = tmpAtTheEnd.stream()
 																		   .map(Traveller::getTravelledDistance)
@@ -114,7 +115,8 @@ public class Day17 {
 					knownSubPaths.put(traveller.getLastSignificantSegment(), travelledSubDistance);
 				}
 			}
-			travellers.removeAll(doneTravellers);
+			newTravellers.removeAll(doneTravellers);
+			newTravellers.forEach(travellers::addFirst);
 
 			if (iteration % 1_000_000 == 0) {
 				//					System.out.println("hit ratio: " + (double) hits / (hits + misses) * 100);
@@ -263,9 +265,9 @@ public class Day17 {
 
 	private class Traveller {
 
-		private String lastSignificantSegment;
-		private int travelledDistance;
-		private List<Tile> travelledPath = new ArrayList<>();
+		private String lastSignificantSegment = "";
+		private int travelledDistance = 0;
+		private List<Tile> travelledPath = new ArrayList<>(512);
 
 		@Override
 		public String toString() {
@@ -298,9 +300,10 @@ public class Day17 {
 		}
 
 		public Integer calculateTravelledDistance() {
-			return travelledPath.subList(1, travelledPath.size()).stream()
-								.mapToInt(Tile::getHeatLoss)
-								.sum();
+			return travelledDistance + travelledPath.getLast().getHeatLoss();
+			//			return travelledPath.subList(1, travelledPath.size()).stream()
+			//								.mapToInt(Tile::getHeatLoss)
+			//								.sum();
 		}
 
 		private void setTravelledPath(List<Tile> path) {
@@ -308,8 +311,8 @@ public class Day17 {
 		}
 
 		public Traveller clone() {
-//			LinkedList<Tile> path = new LinkedList<>();
-//			travelledPath.forEach(path::addLast);
+			//			LinkedList<Tile> path = new LinkedList<>();
+			//			travelledPath.forEach(path::addLast);
 
 			final Traveller traveller = new Traveller();
 			traveller.setTravelledPath(new ArrayList<>(travelledPath));
@@ -319,11 +322,16 @@ public class Day17 {
 		}
 
 		public String calculateLastSignificantSegment() {
-			String result = "";
-			for (int i = 0; i < 4 && i < travelledPath.size(); i++) {
-				result += travelledPath.get(travelledPath.size() - 1 - i).getLabel() + "_";
-			}
-			return result;
+			//			String result = "";
+			//			for (int i = 0; i < 4 && i < travelledPath.size(); i++) {
+			//				result += travelledPath.get(travelledPath.size() - 1 - i).getLabel() + "_";
+			//			}
+			//			return result;
+
+			return lastSignificantSegment.substring(Math.max(0, lastSignificantSegment.length() - 4),
+													Math.max(0, lastSignificantSegment.length() - 2))
+				   + travelledPath.getLast().getLabel();
+
 		}
 
 	}
